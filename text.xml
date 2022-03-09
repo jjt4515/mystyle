@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- Required meta tags -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="naver-site-verification" content="9cb4fdf03780ec7d08f6b4350fca98c4d48a8e50" />
+<meta property="og:title" content="fashiontest">
+<meta name="description" content="인공지능이 사진을 분석하여 패션 스타일이 비슷한 연예인을 찾음" />
+<meta property="og:description" content="fashiontest - 닮은 패션 연예인 찾기"/>
+<link
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+rel="stylesheet"
+integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+crossorigin="anonymous"
+/>
+<link rel="canonical" href="https://fashionstyletest.netlify.app/index.html/">
+<link rel="shortcut icon" href="http://fashionstyletest.ga/search.ico" type="image/x-icon">
+<link rel="icon" href="http://fashionstyletest.ga/search.ico" type="image/x-icon" sizes="32x32">
+<title>닮은 패션 연예인 찾기</title>
+<script
+type="text/javascript"
+src="http://s7.addthis.com/js/300/addthis_widget.js#pubid=ra-620df4454ed47884"
+></script>
+</head>
+<link rel="stylesheet" href="http://fashionstyletest.ga/style.css" />
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-light nav-distance">
+<div class="container-fluid">
+<a class="navbar-brand" href="http://fashionstyletest.ga#">닮은 패션 연예인 찾기</a>
+<button
+class="navbar-toggler"
+type="button"
+data-bs-toggle="collapse"
+data-bs-target="#navbarNav"
+aria-controls="navbarNav"
+aria-expanded="false"
+aria-label="Toggle navigation"
+>
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="collapse navbar-collapse" id="navbarNav">
+<ul class="navbar-nav">
+</ul>
+</div>
+</div>
+</nav>
+<section class="section">
+<h1 class="title">닮은 패션 연예인 찾기</h1>
+<h2 class="subtitle">나는 어떤 연예인과 패션 스타일이 비슷할까?</h2>
+</section>
+<section class="d-flex justify-content-center gender-cover">
+<p class="d-flex align-items-center pr-3">여자</p>
+<div>
+<input type="checkbox" id="gender" />
+<label for="gender">
+<span class="knob">
+<i></i>
+</span>
+</label>
+</div>
+<p class="d-flex align-items-center pl-3">남자</p>
+</section>
+<script
+class="jsbin"
+src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"
+></script>
+<div class="container file-upload">
+<div class="image-upload-wrap">
+<input
+class="file-upload-input"
+type="file"
+onchange="readURL(this);"
+accept="image/*"
+/>
+<div class="drag-text">
+<img src="http://fashionstyletest.ga/img/upload.png" class="upload" />
+<h3>사진을 올려놓거나 클릭하여 업로드하세요</h3>
+<h5>(사진에 전신이 다 나와야합니다)</h5>
+</div>
+</div>
+<div class="file-upload-content">
+<img class="file-upload-image" id="face-image" src="http://fashionstyletest.ga#" alt="your image" />
+<div id="loading">
+<div class="spinner-grow" role="status">
+<span class="sr-only"></span>
+</div>
+<p class="loading-text">
+AI가 당신의 사진을 분석중입니다
+</p>
+</div>
+<p class="result-message"></p>
+<div id="label-container"></div>
+<div class="addthis_inline_share_toolbox"></div>
+<div class="image-title-wrap">
+<button
+type="button"
+onclick="window.location.reload()"
+class="reload-image-btn"
+>
+<span class="reload-image-text">다른 사진으로 재시도</span>
+</button>
+</div>
+</div>
+</div>
+<footer>Icon made by Freepik from www.flaticon.com</footer>
+<script
+src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+crossorigin="anonymous"
+></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+<script>
+function readURL(input) {
+if (input.files && input.files[0]) {
+var reader = new FileReader();
+
+reader.onload = function (e) {
+$('.image-upload-wrap').hide();
+$('footer').hide();
+
+$('.file-upload-image').attr('src', e.target.result);
+$('.file-upload-content').show();
+
+$('.image-title').html(input.files[0].name);
+};
+
+reader.readAsDataURL(input.files[0]);
+init().then(() => {
+predict();
+$('#loading').hide();
+});
+} else {
+removeUpload();
+}
+}
+
+function removeUpload() {
+$('.file-upload-input').replaceWith($('.file-upload-input').clone());
+$('.file-upload-content').hide();
+$('.image-upload-wrap').show();
+}
+$('.image-upload-wrap').bind('dragover', function () {
+$('.image-upload-wrap').addClass('image-dropping');
+});
+$('.image-upload-wrap').bind('dragleave', function () {
+$('.image-upload-wrap').removeClass('image-dropping');
+});
+</script>
+<script type="text/javascript">
+// More API functions here:
+// https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+
+// the link to your model provided by Teachable Machine export panel
+let URL;
+const urlMale = 'https://teachablemachine.withgoogle.com/models/34hNLvH-t/';
+const urlFemale = 'https://teachablemachine.withgoogle.com/models/slnAAex_6/';
+let model, webcam, labelContainer, maxPredictions;
+
+// Load the image model and setup the webcam
+async function init() {
+if(document.getElementById("gender").checked) {
+URL = urlMale;
+} else {
+URL = urlFemale;
+}
+const modelURL = URL + 'model.json';
+const metadataURL = URL + 'metadata.json';
+
+// load the model and metadata
+// Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+// or files from your local hard drive
+// Note: the pose library adds "tmImage" object to your window (window.tmImage)
+model = await tmImage.load(modelURL, metadataURL);
+maxPredictions = model.getTotalClasses();
+labelContainer = document.getElementById('label-container');
+for (let i = 0; i < 5; i++) {
+// and class labels
+var element = document.createElement('div');
+labelContainer.appendChild(element);
+}
+}
+
+// run the webcam image through the image model
+async function predict() {
+// predict can take in an image, video or canvas html element
+var image = document.getElementById('face-image');
+const prediction = await model.predict(image, false);
+prediction.sort((a, b) => parseFloat(b.probability) - parseFloat(a.probability));
+console.log(prediction[0].className);
+var result, resultSentence;
+result = prediction[0].className;
+resultSentence = '당신은 ' + result + '님과 패션 스타일이 비슷합니다!';
+var celebName = "<div class='celeb-name'>" + result + '</div>';
+var sentence = '<div class = celeb-sentence>' + resultSentence + '</div>';
+
+$('.result-message').html(celebName + sentence);
+var barWidth;
+for (let i = 0; i < maxPredictions; i++) {
+if (prediction[i].probability.toFixed(2) >= 0.1) {
+barWidth = Math.round(prediction[i].probability.toFixed(2) * 100) + '%';
+} else if (prediction[i].probability.toFixed(2) >= 0.01) {
+barWidth = '5%';
+} else {
+barWidth = '2%';
+}
+var labelName;
+labelName = prediction[i].className;
+switch(labelName){
+case "방탄소년단 랩몬스터" : {
+labelName = "랩몬스터";
+break;
+}
+case "뉴이스트 황민현" : {
+labelName = "황민현";
+break;
+}
+case "방탄소년단 뷔" : {
+labelName = "방탄소년단 뷔";
+break;
+}
+case "블락비 피오" : {
+labelName = "피오";
+break;
+}
+case "레드벨벳 슬기" : {
+labelName = "슬기";
+break;
+}
+case "블랙핑크 리사" : {
+labelName = "리사";
+break;
+}
+case "블랙핑크 제니" : {
+labelName = "제니";
+break;
+}
+case "소녀시대 수영" : {
+labelName = "수영";
+break;
+}
+case "위키미키 김도연" : {
+labelName = "김도연";
+break;
+}
+case "티아라 지연" : {
+labelName = "지연";
+break;
+}
+default:
+break;
+}
+
+var label =
+"<div class='justify-content-center celeb-label'>" + labelName + '</div>';
+var bar =
+"<div class='justify-content-center bar-container'><div class='celeb-box-" +
+i +
+"'></div><div class='justify-content-center celeb-bar-" +
+i +
+"' style='width: " +
+barWidth +
+"'><span class='percent-text'>" +
+Math.round(prediction[i].probability.toFixed(2) * 100) +
+'%</span></div></div>';
+labelContainer.childNodes[i].innerHTML = label + bar;
+}
+}
+</script>
+</body>
+<!-- Copyright (c) 2022 by Aaron Vanston (https://codepen.io/aaronvanston/pen/yNYOXR)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+</html>
